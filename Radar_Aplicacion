@@ -15,7 +15,8 @@ void setup() {
   
   size(1200, 700); // *CAMBIA ESTO A TU RESOLUCIÓN DE PANTALLA*
   smooth();
-  myPort = new Serial(this, "COM4", 9600); // inicia la comunicación serial
+  printArray(Serial.list());
+  myPort = new Serial(this, Serial.list()[0], 9600); // inicia la comunicación serial
   myPort.bufferUntil('.'); // lee los datos del puerto serial hasta el carácter '.'. Entonces, realmente lee esto: ángulo, distancia, Escala.
 }
 
@@ -35,23 +36,30 @@ void draw() {
   drawText();
 }
 
-void serialEvent (Serial myPort) { // comienza a leer datos desde el puerto serial
-  // lee los datos desde el puerto serial hasta el carácter '.' y los pone en la variable String "data".
+void serialEvent (Serial myPort) {
+  // Lee los datos desde el puerto serial hasta el carácter '.' y los pone en la variable String "data".
   data = myPort.readStringUntil('.');
-  data = data.substring(0, data.length()-1);
-  
-  index1 = data.indexOf(","); // encuentra el carácter ',' y lo pone en la variable "index1"
-  angle = data.substring(0, index1); // lee los datos desde la posición "0" hasta la posición de la variable index1 o ese es el valor del ángulo que la placa Arduino envió al puerto serial
-  data = data.substring(index1, data.length());
-  index2 = data.indexOf(",");
-  distance = data.substring(0, index2);
-  Escala = data.substring(index2 + 1, data.length()); // lee los datos desde la posición "index1" hasta el final de los datos, o sea el valor de la distancia
-  
-  // convierte las variables String en enteros
-  iAngle = int(angle);
-  iDistance = int(distance);
-  iEscala = int(Escala);
+  data = data.substring(0, data.length() - 1); // Elimina el carácter final '.'
+  printArray(data);
+  index1 = data.indexOf(","); // Encuentra la primera coma
+  angle = data.substring(0, index1); // Ángulo
+  data = data.substring(index1 + 1); // Actualiza data eliminando el ángulo
+
+  index2 = data.indexOf(","); // Encuentra la segunda coma
+  distance = data.substring(0, index2); // Distancia
+  Escala = data.substring(index2 + 1); // Escala
+
+  // Convierte las variables String a enteros usando parseInt()
+  iAngle = parseInt(angle);
+  iDistance = parseInt(distance);
+  iEscala = parseInt(Escala); // Cambié esto a parseInt()
+
+  // Imprime para depuración
+  /*println("Distancia: " + iDistance);
+  println("Escala: " + iEscala);*/
 }
+
+
 
 void drawRadar() {
   pushMatrix();
@@ -82,18 +90,23 @@ void drawObject() {
   stroke(255,10,10); // color rojo
   if (iEscala == 0){
     pixsDistance = iDistance * ((height-height*0.1666) * 0.025); // convierte la distancia del sensor de cm a píxeles
+    if (iDistance < 40) {
+      line(pixsDistance * cos(radians(iAngle)), -pixsDistance * sin(radians(iAngle)), (width-width*0.505) * cos(radians(iAngle)), -(width-width*0.505) * sin(radians(iAngle)));
+    }
   }
   else if (iEscala == 1){
     pixsDistance = (iDistance/2) * ((height-height*0.1666) * 0.025); // convierte la distancia del sensor de cm a píxeles
+    if (iDistance < 80) {
+      line(pixsDistance * cos(radians(iAngle)), -pixsDistance * sin(radians(iAngle)), (width-width*0.505) * cos(radians(iAngle)), -(width-width*0.505) * sin(radians(iAngle)));
+    }  
   }
   else if (iEscala == 2){
     pixsDistance = (iDistance/3) * ((height-height*0.1666) * 0.025); // convierte la distancia del sensor de cm a píxeles
+    if (iDistance < 120) {
+      line(pixsDistance * cos(radians(iAngle)), -pixsDistance * sin(radians(iAngle)), (width-width*0.505) * cos(radians(iAngle)), -(width-width*0.505) * sin(radians(iAngle)));
+    }
   }
-  // limitando el rango a 40 cm
-  if (iDistance < 40) {
-    // dibuja el objeto según el ángulo y la distancia
-    line(pixsDistance * cos(radians(iAngle)), -pixsDistance * sin(radians(iAngle)), (width-width*0.505) * cos(radians(iAngle)), -(width-width*0.505) * sin(radians(iAngle)));
-  }
+
   popMatrix();
 }
 
